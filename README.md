@@ -9,7 +9,7 @@ Bu proje, yapay zeka destekli bir yazilim gelistirme takimi tarafindan yonetilen
 | Ajan | Rol | Durum |
 |------|-----|-------|
 | Team Lead | Proje yonetimi, koordinasyon, kalite kontrol | Aktif |
-| Designer | UI/UX tasarim, wireframe, mockup | Beklemede |
+| Designer | UI/UX tasarim, wireframe, mockup | Aktif |
 | Frontend | Mobil arayuz gelistirme | Beklemede |
 | Backend | API ve veritabani gelistirme | Beklemede |
 
@@ -18,9 +18,11 @@ Bu proje, yapay zeka destekli bir yazilim gelistirme takimi tarafindan yonetilen
 ```
 ai-agent-team-mobile-app/
 ├── agents/              # AI ajan rol tanimlari ve talimatlari
-│   └── team_lead/       # Takim lideri ajani
+│   ├── team_lead/       # Takim lideri ajani
+│   └── designer/        # Tasarimci ajani
 ├── context/             # Proje baglami ve gereksinimler
 ├── templates/           # Kod ve dokuman sablonlari
+│   └── design/          # Tasarim sablonlari ve standartlari
 ├── data/                # Veri dosyalari ve mock data
 ├── deliverables/        # Tamamlanan ciktilar
 ├── tests/               # Test dosyalari
@@ -37,6 +39,7 @@ ai-agent-team-mobile-app/
 ## Mevcut Asama
 
 **Gun 1**: Proje iskeleti ve Team Lead ajan kurulumu (Tamamlandi)
+**Gun 2**: Designer ajani kurulumu ve tasarim standartlari (Tamamlandi)
 
 ---
 
