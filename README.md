@@ -23,6 +23,17 @@ ai-agent-team-mobile-app/
 │   ├── frontend/        # Frontend ajani
 │   └── backend/         # Backend ajani
 ├── context/             # Proje baglami ve gereksinimler
+│   ├── project-requirements.md   # Urun gereksinimleri
+│   ├── user-stories.md           # Kullanici hikayesi backlog
+│   ├── feature-specs/            # Ozellik bazli spesifikasyonlar
+│   ├── technical-constraints.md  # Teknik kisitlamalar ve kararlar
+│   └── glossary.md               # Turkce↔Ingilizce terimler sozlugu
+├── operations/          # Operasyon merkezi - koordinasyon altyapisi
+│   ├── hub/             # Gunluk koordinasyon (gorev panosu, sprint, ajan durumu)
+│   ├── workflows/       # Surec tanimlari (ozellik, bug, review, deploy, release)
+│   ├── communication/   # Ajan iletisim protokolleri (handoff, escalation, ADR)
+│   ├── quality/         # Kalite kapilari (tasarim, frontend, backend, entegrasyon, release)
+│   └── tracking/        # Ilerleme takibi (sprint kaydi, kilometre tasi, karar kaydi)
 ├── templates/           # Kod ve dokuman sablonlari
 │   ├── design/          # Tasarim sablonlari ve standartlari
 │   ├── frontend/        # Frontend sablonlari ve standartlari
@@ -46,6 +57,11 @@ ai-agent-team-mobile-app/
 **Gun 2**: Designer ajani kurulumu ve tasarim standartlari (Tamamlandi)
 **Gun 3**: Frontend ajani kurulumu ve gelistirme standartlari (Tamamlandi)
 **Gun 4**: Backend ajani kurulumu ve API/DB standartlari (Tamamlandi)
+**Gun 5**: Operasyon merkezi kurulumu (Tamamlandi)
+
+## Operasyon Merkezi
+
+Proje koordinasyonu, is akislari ve kalite kontrol surecleri `operations/` dizininde tanimlanmistir. Detayli navigasyon icin: `operations/README.md`
 
 ---
 
