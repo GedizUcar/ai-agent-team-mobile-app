@@ -101,3 +101,16 @@ export const getMe = asyncHandler(async (req: Request, res: Response) => {
 
   res.json(response);
 });
+
+export const updateProfile = asyncHandler(async (req: Request, res: Response) => {
+  const userId = req.user!.userId;
+  const user = await authService.updateProfile(userId, req.body);
+
+  const response: ApiResponse = {
+    success: true,
+    data: user,
+    message: 'Profile updated successfully',
+  };
+
+  res.json(response);
+});

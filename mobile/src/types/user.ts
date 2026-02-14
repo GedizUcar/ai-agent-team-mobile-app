@@ -27,3 +27,9 @@ export interface RegisterRequest {
   lastName: string;
   phone?: string;
 }
+
+export interface UpdateProfileRequest {
+  firstName?: string;
+  lastName?: string;
+  phone?: string | null;
+}

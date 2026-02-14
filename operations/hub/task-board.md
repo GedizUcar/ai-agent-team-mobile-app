@@ -4,10 +4,10 @@ Bu belge, tum aktif gorevlerin durumunu takip eder. Her gorev baslangicinda ve b
 
 ---
 
-## Aktif Sprint: Sprint 2
+## Aktif Sprint: Sprint 5
 
-**Sprint Hedefi**: M2 - Authentication Sistemi
-**Tarih Araligi**: 2026-02-11
+**Sprint Hedefi**: M5 - Profil, Ayarlar ve Dark Mode
+**Tarih Araligi**: 2026-02-14
 
 ---
 
@@ -82,6 +82,32 @@ Bu sprintte tamamlanan gorevler.
 | T-013 | Input ve Button reusable komponentleri | TASK | Frontend | 2026-02-11 | Sprint 2 |
 | T-014 | Auth API service fonksiyonlari | TASK | Frontend | 2026-02-11 | Sprint 2 |
 | T-015 | Login, Register, ForgotPassword ekranlari | FEAT | Frontend | 2026-02-11 | Sprint 2 |
+| T-016 | Product/Category Zod validation schemalari | TASK | Backend | 2026-02-12 | Sprint 3 |
+| T-017 | Product/Category service katmani (CRUD, list, home aggregation) | TASK | Backend | 2026-02-12 | Sprint 3 |
+| T-018 | Product/Category controller + routes | TASK | Backend | 2026-02-12 | Sprint 3 |
+| T-019 | Seed data scripti (6 kategori, 24 urun, varyantlar) | TASK | Backend | 2026-02-12 | Sprint 3 |
+| T-020 | Product TypeScript tipleri + API service fonksiyonlari | TASK | Frontend | 2026-02-12 | Sprint 3 |
+| T-021 | ProductCard + CategoryCard reusable komponentleri | TASK | Frontend | 2026-02-12 | Sprint 3 |
+| T-022 | HomeScreen implementasyonu (banner, kategoriler, featured) | FEAT | Frontend | 2026-02-12 | Sprint 3 |
+| T-023 | ProductsScreen implementasyonu (grid, infinite scroll) | FEAT | Frontend | 2026-02-12 | Sprint 3 |
+| T-024 | ProductDetailScreen implementasyonu (galeri, beden/renk, sepete ekle) | FEAT | Frontend | 2026-02-12 | Sprint 3 |
+| T-025 | Cart/Order Zod validation schemalari | TASK | Backend | 2026-02-13 | Sprint 4 |
+| T-026 | Cart service (get, addItem, updateQuantity, removeItem) | TASK | Backend | 2026-02-13 | Sprint 4 |
+| T-027 | Order service (create, list, detail) + stock management | TASK | Backend | 2026-02-13 | Sprint 4 |
+| T-028 | Cart controller + routes (4 endpoint) | TASK | Backend | 2026-02-13 | Sprint 4 |
+| T-029 | Order controller + routes (3 endpoint) | TASK | Backend | 2026-02-13 | Sprint 4 |
+| T-030 | Order/Cart TypeScript tipleri + API service fonksiyonlari | TASK | Frontend | 2026-02-13 | Sprint 4 |
+| T-031 | CartScreen implementasyonu (liste, miktar, silme, toplam, empty state) | FEAT | Frontend | 2026-02-13 | Sprint 4 |
+| T-032 | CheckoutScreen implementasyonu (adres formu + siparis ozeti) | FEAT | Frontend | 2026-02-13 | Sprint 4 |
+| T-033 | OrderConfirmationScreen implementasyonu (basari, siparis no) | FEAT | Frontend | 2026-02-13 | Sprint 4 |
+| T-034 | CartStackNavigator + navigation guncelleme + Cart badge | TASK | Frontend | 2026-02-13 | Sprint 4 |
+| T-035 | Profile update endpoint (Zod validation + service + controller + route) | TASK | Backend | 2026-02-14 | Sprint 5 |
+| T-036 | Profile TypeScript tipleri + API service fonksiyonu | TASK | Frontend | 2026-02-14 | Sprint 5 |
+| T-037 | ProfileScreen implementasyonu (avatar, bilgiler, menu, son siparisler) | FEAT | Frontend | 2026-02-14 | Sprint 5 |
+| T-038 | ProfileEditScreen implementasyonu (ad, soyad, telefon formu) | FEAT | Frontend | 2026-02-14 | Sprint 5 |
+| T-039 | SettingsScreen implementasyonu (tema secici, bildirimler, cikis) | FEAT | Frontend | 2026-02-14 | Sprint 5 |
+| T-040 | OrderHistoryScreen implementasyonu (liste, infinite scroll, durum badge) | FEAT | Frontend | 2026-02-14 | Sprint 5 |
+| T-041 | ProfileStackNavigator + navigation guncelleme | TASK | Frontend | 2026-02-14 | Sprint 5 |
 
 ---
 

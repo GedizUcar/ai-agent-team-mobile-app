@@ -6,38 +6,79 @@ export type OrderStatus =
   | 'DELIVERED'
   | 'CANCELLED';
 
+export interface OrderItem {
+  id: string;
+  productId: string;
+  variantId: string;
+  productName: string;
+  imageUrl: string | null;
+  size: string;
+  color: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+}
+
 export interface Order {
   id: string;
   orderNumber: string;
   status: OrderStatus;
-  totalAmount: number;
-  shippingAddressId: string;
+  subtotal: number;
+  shippingCost: number;
+  total: number;
+  shippingAddress: ShippingAddress;
+  notes?: string;
   items: OrderItem[];
+  itemCount: number;
   createdAt: string;
   updatedAt: string;
 }
 
-export interface OrderItem {
-  id: string;
-  productId: string;
-  variantId?: string;
-  productName: string;
-  variantInfo?: string;
-  quantity: number;
-  unitPrice: number;
-  totalPrice: number;
-}
-
-export interface Address {
-  id: string;
-  title: string;
+export interface ShippingAddress {
   fullName: string;
   phone: string;
-  addressLine1: string;
-  addressLine2?: string;
+  address: string;
   city: string;
-  state: string;
   postalCode: string;
   country: string;
-  isDefault: boolean;
+}
+
+export interface CreateOrderRequest {
+  shippingAddress: ShippingAddress;
+  notes?: string;
+}
+
+export interface CartItemResponse {
+  id: string;
+  productId: string;
+  variantId: string;
+  quantity: number;
+  product: {
+    name: string;
+    price: number;
+    comparePrice: number | null;
+    imageUrl: string | null;
+    isAvailable: boolean;
+  };
+  variant: {
+    size: string;
+    color: string;
+    colorHex: string | null;
+    stock: number;
+    isAvailable: boolean;
+  };
+  unitPrice: number;
+  total: number;
+}
+
+export interface CartResponse {
+  items: CartItemResponse[];
+  subtotal: number;
+  itemCount: number;
+}
+
+export interface AddCartItemRequest {
+  productId: string;
+  variantId: string;
+  quantity: number;
 }

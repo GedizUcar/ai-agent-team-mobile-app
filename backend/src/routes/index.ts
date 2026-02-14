@@ -1,5 +1,9 @@
 import { Router } from 'express';
 import { authRouter } from './auth';
+import { productRouter } from './products';
+import { categoryRouter } from './categories';
+import { cartRouter } from './cart';
+import { orderRouter } from './orders';
 
 const router = Router();
 
@@ -14,9 +18,9 @@ router.get('/health', (_req, res) => {
 
 // API routes
 router.use('/auth', authRouter);
-// router.use('/products', productRouter);
-// router.use('/categories', categoryRouter);
-// router.use('/cart', cartRouter);
-// router.use('/orders', orderRouter);
+router.use('/products', productRouter);
+router.use('/categories', categoryRouter);
+router.use('/cart', cartRouter);
+router.use('/orders', orderRouter);
 
 export { router };

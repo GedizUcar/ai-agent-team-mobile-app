@@ -416,17 +416,17 @@ boylece tercih ettigim gorunumde kullanabileyim.
 | US-003 | Token Yenileme | Auth | Tamamlandi | Sprint 2 |
 | US-004 | Cikis Yapma | Auth | Tamamlandi | Sprint 2 |
 | US-005 | Sifre Sifirlama | Auth | Tamamlandi | Sprint 2 |
-| US-010 | Profil Goruntuleme | Profil | Backlog | - |
-| US-011 | Profil Duzenleme | Profil | Backlog | - |
-| US-020 | Ana Sayfa | Home | Backlog | - |
-| US-030 | Urun Listeleme | Urun | Backlog | - |
-| US-040 | Urun Detay | Urun | Backlog | - |
-| US-041 | Sepete Urun Ekleme | Urun | Backlog | - |
-| US-050 | Sepet Goruntuleme | Sepet | Backlog | - |
-| US-051 | Sepet Miktar Guncelleme | Sepet | Backlog | - |
-| US-060 | Siparis Olusturma | Siparis | Backlog | - |
-| US-061 | Siparis Onay Ekrani | Siparis | Backlog | - |
-| US-070 | Tema Degistirme (Dark Mode) | Ayarlar | Backlog | - |
+| US-010 | Profil Goruntuleme | Profil | Tamamlandi | Sprint 5 |
+| US-011 | Profil Duzenleme | Profil | Tamamlandi | Sprint 5 |
+| US-020 | Ana Sayfa | Home | Tamamlandi | Sprint 3 |
+| US-030 | Urun Listeleme | Urun | Tamamlandi | Sprint 3 |
+| US-040 | Urun Detay | Urun | Tamamlandi | Sprint 3 |
+| US-041 | Sepete Urun Ekleme | Urun | Tamamlandi | Sprint 4 |
+| US-050 | Sepet Goruntuleme | Sepet | Tamamlandi | Sprint 4 |
+| US-051 | Sepet Miktar Guncelleme | Sepet | Tamamlandi | Sprint 4 |
+| US-060 | Siparis Olusturma | Siparis | Tamamlandi | Sprint 4 |
+| US-061 | Siparis Onay Ekrani | Siparis | Tamamlandi | Sprint 4 |
+| US-070 | Tema Degistirme (Dark Mode) | Ayarlar | Tamamlandi | Sprint 5 |
 
 ### Post-MVP (P1/P2)
 

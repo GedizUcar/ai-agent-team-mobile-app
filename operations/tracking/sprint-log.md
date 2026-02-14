@@ -30,6 +30,132 @@ Bu belge, sprint bazli aktivite kayitlarini tutar. Her gun sonu Team Lead tarafi
 
 ---
 
+## Sprint 5: M5 - Profil, Ayarlar ve Dark Mode
+
+**Tarih**: 2026-02-14
+**Hedef**: Profil goruntuleme/duzenleme, ayarlar ekrani (tema, bildirimler, cikis), siparis gecmisi ve dark mode tam implementasyonu
+
+### Gunluk Kayitlar
+
+#### Gun 1 - 2026-02-14
+- **Aktif Ajan**: Backend + Frontend (paralel calisma)
+- **Yapilan Is**:
+  - Backend: Profile update Zod validation schema (updateProfileSchema: firstName, lastName, phone) (T-035)
+  - Backend: Profile update service fonksiyonu (updateProfile) (T-035)
+  - Backend: Profile update controller + route (PUT /auth/profile, authenticated) (T-035)
+  - Frontend: UpdateProfileRequest tipi eklendi (T-036)
+  - Frontend: authService.updateProfile fonksiyonu eklendi (store sync ile) (T-036)
+  - Frontend: ProfileScreen - avatar (initials), kullanici bilgileri, menu (Siparislerim, Ayarlar), son siparisler, pull-to-refresh (T-037)
+  - Frontend: ProfileEditScreen - React Hook Form (ad, soyad, telefon), form validasyon, basari/hata mesajlari (T-038)
+  - Frontend: SettingsScreen - tema secici (Acik/Koyu/Sistem), bildirim switch, cikis butonu (onay dialog) (T-039)
+  - Frontend: OrderHistoryScreen - siparis listesi, infinite scroll, durum badge'leri, empty state (T-040)
+  - Frontend: ProfileStackNavigator (ProfileMain, ProfileEdit, Settings, OrderHistory) (T-041)
+  - Frontend: TabNavigator guncellendi - ProfileStackNavigator kullaniliyor
+  - Frontend: Navigation types guncellendi - ProfileStackParamList eklendi
+- **Durum**: Tamamlandi
+- **Notlar**: Backend ve Frontend paralel calistirildi, TypeScript strict mode aktif, tum ekranlar dark mode uyumlu (useThemeColors hook), Zustand settings store ile tema persist
+
+### Sprint Sonu Degerlendirmesi
+
+| Metrik | Hedef | Gerceklesen |
+|--------|-------|-------------|
+| Planlanan gorev | 7 | 7 |
+| Tamamlanan gorev | 7 | 7 |
+| Bulunan bug | - | 0 |
+| Duzeltilen bug | - | 0 |
+
+### Dersler
+- Mevcut useThemeColors hook ve Zustand settings store sayesinde dark mode tum ekranlarda otomatik calisiyor
+- Profile stack navigator pattern diger tab'larla tutarli tutuldu
+- React Query invalidation ile profil guncelleme sonrasi tum ekranlar senkronize
+
+---
+
+## Sprint 4: M4 - Sepet ve Siparis
+
+**Tarih**: 2026-02-13
+**Hedef**: Sepet ve siparis sisteminin backend ve frontend icin tam implementasyonu (Cart, Checkout, Order Confirmation)
+
+### Gunluk Kayitlar
+
+#### Gun 1 - 2026-02-13
+- **Aktif Ajan**: Backend + Frontend (paralel calisma)
+- **Yapilan Is**:
+  - Backend: Cart/Order Zod validation schemalari (addCartItem, updateCartItem, removeCartItem, createOrder, listOrders, getOrder) (T-025)
+  - Backend: Cart service katmani - getCart, addItem (stok kontrolu, duplicate handling), updateItemQuantity, removeItem, clearCart (T-026)
+  - Backend: Order service katmani - createOrder (cart->order donusumu, stok azaltma, orderNumber uretimi, transaction), listOrders (pagination), getOrderById (T-027)
+  - Backend: Cart controller + routes - GET /cart, POST /cart/items, PATCH /cart/items/:itemId, DELETE /cart/items/:itemId (tumu auth gerektirir) (T-028)
+  - Backend: Order controller + routes - POST /orders, GET /orders, GET /orders/:id (tumu auth gerektirir) (T-029)
+  - Frontend: Order/Cart TypeScript tipleri guncellendi (CartResponse, CartItemResponse, AddCartItemRequest, ShippingAddress, CreateOrderRequest) (T-030)
+  - Frontend: Cart API service fonksiyonlari (getCart, addItem, updateItemQuantity, removeItem) (T-030)
+  - Frontend: Order API service fonksiyonlari (createOrder, getOrders, getOrderById) (T-030)
+  - Frontend: CartScreen - urun listesi, gorsel, miktar +/-, silme, ara toplam/kargo/toplam, ucretsiz kargo bilgisi, empty state (T-031)
+  - Frontend: CheckoutScreen - teslimat adresi formu (ad, telefon, adres, sehir, posta kodu), siparis ozeti, form validasyon (T-032)
+  - Frontend: OrderConfirmationScreen - basari ikonu, siparis numarasi, alisverise devam/siparisleri gor butonlari (T-033)
+  - Frontend: CartStackNavigator (CartMain, Checkout, OrderConfirmation) (T-034)
+  - Frontend: TabNavigator guncellendi - CartStackNavigator kullaniliyor, Cart badge aktif
+  - Frontend: Navigation types guncellendi - CartStackParamList eklendi
+- **Durum**: Tamamlandi
+- **Notlar**: Backend ve Frontend paralel calistirildi, TypeScript strict mode aktif, kargo ucretsiz esik degeri 500 TL, standart kargo 29.99 TL
+
+### Sprint Sonu Degerlendirmesi
+
+| Metrik | Hedef | Gerceklesen |
+|--------|-------|-------------|
+| Planlanan gorev | 10 | 10 |
+| Tamamlanan gorev | 10 | 10 |
+| Bulunan bug | - | 0 |
+| Duzeltilen bug | - | 0 |
+
+### Dersler
+- Prisma $transaction ile order olusturma + stok azaltma atomik yapilarak veri butunlugu saglandi
+- Cart store (Zustand/lokal) ve backend cart sync'i MVP icin lokal oncelikli tutuldu
+- Kargo ucreti icin threshold pattern (500 TL ucretsiz) iyi bir UX sagliyor
+
+---
+
+## Sprint 3: M3 - Urun Katalogu
+
+**Tarih**: 2026-02-12
+**Hedef**: Urun katalogu sisteminin backend ve frontend icin tam implementasyonu (Home, Product List, Product Detail)
+
+### Gunluk Kayitlar
+
+#### Gun 1 - 2026-02-12
+- **Aktif Ajan**: Backend + Frontend (paralel calisma)
+- **Yapilan Is**:
+  - Backend: Product/Category Zod validation schemalari (listProducts, getProduct, listCategories, homeData) (T-016)
+  - Backend: Product service katmani - listProducts (pagination, filter, search, sort), getProductById, listCategories (productCount), getHomeData (featured, newArrivals, categories) (T-017)
+  - Backend: Product controller + routes - GET /products, GET /products/home, GET /products/:id, GET /categories (T-018)
+  - Backend: Seed data scripti - 6 kategori (Kadin, Erkek, Aksesuar, Ayakkabi, Canta, Spor), 24 urun, varyantlar + gorseller (T-019)
+  - Frontend: Product TypeScript tipleri guncellendi (Category, ProductImage, ProductVariant, Product, ProductDetail, HomeData, Pagination) (T-020)
+  - Frontend: Product API service fonksiyonlari (getHomeData, getProducts, getProductById, getCategories) (T-020)
+  - Frontend: ProductCard komponenti (gorsel, fiyat, indirim, kategori, memo) (T-021)
+  - Frontend: CategoryCard komponenti (pill/chip, selected state, productCount badge) (T-021)
+  - Frontend: HomeScreen - banner, yatay kategori listesi, featured products, new arrivals, pull-to-refresh (T-022)
+  - Frontend: ProductsScreen - 2'li grid, infinite scroll, kategori filtreleme (T-023)
+  - Frontend: ProductDetailScreen - gorsel galeri, beden/renk secimi, stok durumu, sepete ekle (T-024)
+  - Frontend: ProductStackNavigator + HomeStackNavigator (tab icinde stack navigasyon) (T-024)
+  - Frontend: TabNavigator guncellendi - stack navigator'lar ve Turkce tab isimleri
+- **Durum**: Tamamlandi
+- **Notlar**: Backend ve Frontend paralel calistirildi, TypeScript strict mode aktif, her iki proje hatasiz derleniyor
+
+### Sprint Sonu Degerlendirmesi
+
+| Metrik | Hedef | Gerceklesen |
+|--------|-------|-------------|
+| Planlanan gorev | 9 | 9 |
+| Tamamlanan gorev | 9 | 9 |
+| Bulunan bug | - | 0 |
+| Duzeltilen bug | - | 0 |
+
+### Dersler
+- Backend ve Frontend paralel calistirilarak sprint suresi yari yariya kisaltildi
+- Prisma schema onceden hazir oldugu icin backend hizla tamamlandi
+- useInfiniteQuery ile sayfalama React Query'de cleanly implement edildi
+
+---
+
 ## Sprint 2: M2 - Authentication Sistemi
 
 **Tarih**: 2026-02-11

@@ -2,7 +2,7 @@ import * as SecureStore from 'expo-secure-store';
 import { api } from './api';
 import { useAuthStore } from '../store/authStore';
 import { useCartStore } from '../store/cartStore';
-import type { User, AuthTokens, LoginRequest, RegisterRequest } from '../types/user';
+import type { User, AuthTokens, LoginRequest, RegisterRequest, UpdateProfileRequest } from '../types/user';
 import type { ApiResponse } from '../types/api';
 
 interface AuthResponse {
@@ -68,5 +68,12 @@ export const authService = {
   async getMe(): Promise<User> {
     const { data } = await api.get<ApiResponse<User>>('/auth/me');
     return extractData(data);
+  },
+
+  async updateProfile(input: UpdateProfileRequest): Promise<User> {
+    const { data } = await api.put<ApiResponse<User>>('/auth/profile', input);
+    const user = extractData(data);
+    useAuthStore.getState().setUser(user);
+    return user;
   },
 };

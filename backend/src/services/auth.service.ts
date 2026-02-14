@@ -13,7 +13,7 @@ import {
   NotFoundError,
 } from '../utils/errors';
 import { ErrorCode } from '../types/api';
-import type { RegisterInput, LoginInput } from '../validators/auth';
+import type { RegisterInput, LoginInput, UpdateProfileInput } from '../validators/auth';
 
 const LOCK_DURATION_MS = 30 * 60 * 1000; // 30 minutes
 const MAX_FAILED_ATTEMPTS = 5;
@@ -246,6 +246,25 @@ export async function getMe(userId: string): Promise<UserResponse> {
   }
 
   return toUserResponse(user);
+}
+
+export async function updateProfile(userId: string, input: UpdateProfileInput): Promise<UserResponse> {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+
+  if (!user || user.deletedAt) {
+    throw new NotFoundError('User not found');
+  }
+
+  const updated = await prisma.user.update({
+    where: { id: userId },
+    data: {
+      ...(input.firstName !== undefined && { firstName: input.firstName }),
+      ...(input.lastName !== undefined && { lastName: input.lastName }),
+      ...(input.phone !== undefined && { phone: input.phone }),
+    },
+  });
+
+  return toUserResponse(updated);
 }
 
 // --- Helpers ---
