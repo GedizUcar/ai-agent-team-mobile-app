@@ -11,6 +11,11 @@ export const createOrderSchema = z.object({
       country: z.string().default('TR'),
     }),
     notes: z.string().optional(),
+    items: z.array(z.object({
+      productId: z.string().uuid(),
+      variantId: z.string().uuid(),
+      quantity: z.number().int().min(1),
+    })).optional(),
   }),
 });
 

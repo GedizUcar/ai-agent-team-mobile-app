@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { typography, spacing, borderRadius, TOUCH_TARGET_MIN } from '../../theme';
 import { productService } from '../../services/product';
+import { cartService } from '../../services/cart';
 import { Button } from '../../components/Button';
 import { useCartStore } from '../../store/cartStore';
 import type { ProductImage, ProductVariant } from '../../types/product';
@@ -45,8 +46,9 @@ function ProductDetailScreenComponent({ route, navigation }: any) {
     queryFn: () => productService.getProductById(productId),
   });
 
-  const formatPrice = (price: number): string => {
-    return `${price.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} \u20BA`;
+  const formatPrice = (price: number | string): string => {
+    const num = typeof price === 'string' ? parseFloat(price) : price;
+    return `${num.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} \u20BA`;
   };
 
   // Extract unique sizes and colors from variants
@@ -87,19 +89,31 @@ function ProductDetailScreenComponent({ route, navigation }: any) {
     return variants.reduce((sum, v) => sum + v.stock, 0);
   };
 
-  const handleAddToCart = useCallback(() => {
-    if (!product || !canAddToCart) return;
+  const handleAddToCart = useCallback(async () => {
+    if (!product || !canAddToCart || !selectedVariant) return;
 
+    // Update local store
     addItem({
       productId: product.id,
-      variantId: selectedVariant?.id,
+      variantId: selectedVariant.id,
       name: product.name,
-      price: selectedVariant?.price ?? product.price,
+      price: parseFloat(String(selectedVariant?.price ?? product.price)),
       quantity: 1,
       imageUrl: product.images[0]?.url,
       size: selectedSize ?? undefined,
       color: selectedColor ?? undefined,
     });
+
+    // Sync with backend cart
+    try {
+      await cartService.addItem({
+        productId: product.id,
+        variantId: selectedVariant.id,
+        quantity: 1,
+      });
+    } catch {
+      // Local cart is already updated, backend sync failed silently
+    }
 
     Alert.alert('Basarili', `${product.name} sepete eklendi.`, [{ text: 'Tamam' }]);
   }, [product, canAddToCart, selectedVariant, selectedSize, selectedColor, addItem]);

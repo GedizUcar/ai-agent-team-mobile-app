@@ -24,61 +24,95 @@ function buildPaginationMeta(page: number, limit: number, total: number) {
 }
 
 export async function createOrder(userId: string, body: CreateOrderBody) {
-  // All cart reading, validation, stock checks, and writes happen inside the transaction
   const order = await prisma.$transaction(async (tx) => {
-    // Read cart inside transaction
-    const cart = await tx.cart.findUnique({
-      where: { userId },
-      include: {
-        items: {
-          include: {
-            product: {
-              select: {
-                id: true,
-                name: true,
-                price: true,
-                isActive: true,
-                deletedAt: true,
-                images: { select: { url: true }, orderBy: { sortOrder: 'asc' as const }, take: 1 },
+    // Resolve order items: from request body or from DB cart
+    let orderItems: Array<{
+      productId: string;
+      variantId: string;
+      quantity: number;
+      productName: string;
+      productPrice: number;
+    }>;
+    let cartId: string | null = null;
+
+    if (body.items && body.items.length > 0) {
+      // Items provided in request body (mobile local cart)
+      const resolved = [];
+      for (const reqItem of body.items) {
+        const product = await tx.product.findUnique({
+          where: { id: reqItem.productId },
+          select: { id: true, name: true, price: true, isActive: true, deletedAt: true },
+        });
+        if (!product || !product.isActive || product.deletedAt !== null) {
+          throw new BadRequestError(`Urun artik mevcut degil`);
+        }
+        const variant = await tx.productVariant.findUnique({
+          where: { id: reqItem.variantId },
+          select: { id: true, stock: true, isActive: true, productId: true },
+        });
+        if (!variant || !variant.isActive || variant.productId !== reqItem.productId) {
+          throw new BadRequestError(`"${product.name}" secili varyant artik mevcut degil`);
+        }
+        if (reqItem.quantity > variant.stock) {
+          throw new BadRequestError(`"${product.name}" icin yeterli stok yok`);
+        }
+        resolved.push({
+          productId: product.id,
+          variantId: variant.id,
+          quantity: reqItem.quantity,
+          productName: product.name,
+          productPrice: Number(product.price),
+        });
+      }
+      orderItems = resolved;
+    } else {
+      // Fallback: read from DB cart
+      const cart = await tx.cart.findUnique({
+        where: { userId },
+        include: {
+          items: {
+            include: {
+              product: {
+                select: { id: true, name: true, price: true, isActive: true, deletedAt: true },
+              },
+              variant: {
+                select: { id: true, stock: true, isActive: true },
               },
             },
-            variant: {
-              select: {
-                id: true,
-                size: true,
-                color: true,
-                stock: true,
-                isActive: true,
-              },
-            },
+            orderBy: { createdAt: 'asc' },
           },
-          orderBy: { createdAt: 'asc' },
         },
-      },
-    });
+      });
 
-    if (!cart || cart.items.length === 0) {
-      throw new BadRequestError('Cart is empty');
-    }
+      if (!cart || cart.items.length === 0) {
+        throw new BadRequestError('Cart is empty');
+      }
+      cartId = cart.id;
 
-    // Validate all items are available and have stock
-    for (const item of cart.items) {
-      if (!item.product.isActive || item.product.deletedAt !== null) {
-        throw new BadRequestError(`"${item.product.name}" artik mevcut degil`);
+      for (const item of cart.items) {
+        if (!item.product.isActive || item.product.deletedAt !== null) {
+          throw new BadRequestError(`"${item.product.name}" artik mevcut degil`);
+        }
+        if (!item.variant.isActive) {
+          throw new BadRequestError(`"${item.product.name}" secili varyant artik mevcut degil`);
+        }
+        if (item.quantity > item.variant.stock) {
+          throw new BadRequestError(`"${item.product.name}" icin yeterli stok yok`);
+        }
       }
-      if (!item.variant.isActive) {
-        throw new BadRequestError(`"${item.product.name}" secili varyant artik mevcut degil`);
-      }
-      if (item.quantity > item.variant.stock) {
-        throw new BadRequestError(
-          `"${item.product.name}" icin yeterli stok yok`,
-        );
-      }
+
+      orderItems = cart.items.map((item) => ({
+        productId: item.product.id,
+        variantId: item.variant.id,
+        quantity: item.quantity,
+        productName: item.product.name,
+        productPrice: Number(item.product.price),
+      }));
     }
 
     // Calculate totals
-    const subtotal = cart.items.reduce(
-      (sum, item) => sum + Number(item.product.price) * item.quantity,
+    const subtotal = orderItems.reduce(
+      (sum, item) => sum + item.productPrice * item.quantity,
       0,
     );
     const shippingCost = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_COST;
@@ -95,12 +129,12 @@ export async function createOrder(userId: string, body: CreateOrderBody) {
         shippingAddress: body.shippingAddress,
         notes: body.notes,
         items: {
-          create: cart.items.map((item) => ({
-            productId: item.product.id,
-            variantId: item.variant.id,
+          create: orderItems.map((item) => ({
+            productId: item.productId,
+            variantId: item.variantId,
             quantity: item.quantity,
-            unitPrice: Number(item.product.price),
-            total: Number(item.product.price) * item.quantity,
+            unitPrice: item.productPrice,
+            total: item.productPrice * item.quantity,
           })),
         },
       },
@@ -118,23 +152,22 @@ export async function createOrder(userId: string, body: CreateOrderBody) {
       },
     });
 
-    // Decrease stock with database-level guard (stock >= quantity)
-    for (const item of cart.items) {
+    // Decrease stock
+    for (const item of orderItems) {
       const result = await tx.$executeRaw`
         UPDATE product_variants
-        SET stock = stock - ${item.quantity}, updated_at = NOW()
-        WHERE id = ${item.variant.id}::uuid AND stock >= ${item.quantity}
+        SET stock = stock - ${item.quantity}::int, updated_at = NOW()
+        WHERE id::text = ${item.variantId} AND stock >= ${item.quantity}::int
       `;
-
       if (result === 0) {
-        throw new BadRequestError(
-          `"${item.product.name}" icin yeterli stok kalmadi`,
-        );
+        throw new BadRequestError(`"${item.productName}" icin yeterli stok kalmadi`);
       }
     }
 
-    // Clear cart
-    await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
+    // Clear DB cart if it was used
+    if (cartId) {
+      await tx.cartItem.deleteMany({ where: { cartId } });
+    }
 
     return newOrder;
   });

@@ -20,8 +20,9 @@ import type { ShippingAddress } from '../../types/order';
 const SHIPPING_COST = 29.99;
 const FREE_SHIPPING_THRESHOLD = 500;
 
-function formatPrice(price: number): string {
-  return `${price.toFixed(2).replace('.', ',')} \u20BA`;
+function formatPrice(price: number | string): string {
+  const num = typeof price === 'string' ? parseFloat(price) : price;
+  return `${num.toFixed(2).replace('.', ',')} \u20BA`;
 }
 
 function CheckoutScreenComponent({ navigation }: CartStackScreenProps<'Checkout'>) {
@@ -94,6 +95,11 @@ function CheckoutScreenComponent({ navigation }: CartStackScreenProps<'Checkout'
           postalCode: form.postalCode.trim(),
           country: form.country,
         },
+        items: items.map((item) => ({
+          productId: item.productId,
+          variantId: item.variantId ?? '',
+          quantity: item.quantity,
+        })),
       });
 
       clearCart();

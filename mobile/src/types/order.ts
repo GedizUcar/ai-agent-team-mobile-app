@@ -46,6 +46,11 @@ export interface ShippingAddress {
 export interface CreateOrderRequest {
   shippingAddress: ShippingAddress;
   notes?: string;
+  items?: Array<{
+    productId: string;
+    variantId: string;
+    quantity: number;
+  }>;
 }
 
 export interface CartItemResponse {

@@ -16,9 +16,12 @@ export const productService = {
   },
 
   async getProducts(params: ProductListParams = {}): Promise<ProductListResponse> {
+    const cleanParams = Object.fromEntries(
+      Object.entries(params).filter(([, v]) => v !== undefined && v !== null),
+    );
     const { data } = await api.get<
       ApiResponse<Product[]> & { meta?: { pagination?: ProductListResponse['pagination'] } }
-    >('/products', { params });
+    >('/products', { params: cleanParams });
 
     return {
       products: data.data,

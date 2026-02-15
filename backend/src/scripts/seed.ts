@@ -1,4 +1,5 @@
 import { prisma } from '../config/database';
+import { hashPassword } from '../utils/password';
 
 interface CategorySeed {
   name: string;
@@ -546,12 +547,64 @@ async function seed() {
   // Clear existing data (order matters: dependents first)
   console.log('Clearing existing data...');
   await prisma.orderItem.deleteMany();
+  await prisma.order.deleteMany();
   await prisma.cartItem.deleteMany();
+  await prisma.cart.deleteMany();
+  await prisma.address.deleteMany();
+  await prisma.session.deleteMany();
   await prisma.productVariant.deleteMany();
   await prisma.productImage.deleteMany();
   await prisma.product.deleteMany();
   await prisma.category.deleteMany();
+  await prisma.user.deleteMany();
   console.log('Existing data cleared.');
+
+  // Create test users
+  console.log('Creating test users...');
+  const testPassword = await hashPassword('Test1234!');
+
+  const testUser = await prisma.user.create({
+    data: {
+      email: 'test@stilora.com',
+      passwordHash: testPassword,
+      firstName: 'Test',
+      lastName: 'Kullanici',
+      phone: '+905551234567',
+      role: 'USER',
+      isActive: true,
+      emailVerified: true,
+    },
+  });
+  console.log(`  User: ${testUser.email} (${testUser.id})`);
+
+  const adminUser = await prisma.user.create({
+    data: {
+      email: 'admin@stilora.com',
+      passwordHash: testPassword,
+      firstName: 'Admin',
+      lastName: 'Stilora',
+      phone: '+905559876543',
+      role: 'ADMIN',
+      isActive: true,
+      emailVerified: true,
+    },
+  });
+  console.log(`  Admin: ${adminUser.email} (${adminUser.id})`);
+
+  // Create address for test user
+  await prisma.address.create({
+    data: {
+      userId: testUser.id,
+      fullName: 'Test Kullanici',
+      phone: '+905551234567',
+      address: 'Ataturk Cad. No:123 D:4',
+      city: 'Istanbul',
+      postalCode: '34000',
+      country: 'TR',
+      isDefault: true,
+    },
+  });
+  console.log('  Address created for test user');
 
   // Insert categories
   console.log('Inserting categories...');

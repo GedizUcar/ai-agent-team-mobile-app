@@ -23,8 +23,9 @@ function ProductCardComponent({ product, onPress, testID }: ProductCardProps) {
   const firstImage = product.images?.[0];
   const hasDiscount = product.comparePrice != null && product.comparePrice > product.price;
 
-  const formatPrice = (price: number): string => {
-    return `${price.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} \u20BA`;
+  const formatPrice = (price: number | string): string => {
+    const num = typeof price === 'string' ? parseFloat(price) : price;
+    return `${num.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} \u20BA`;
   };
 
   return (
