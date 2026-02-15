@@ -1,7 +1,7 @@
 import jwt, { Algorithm, SignOptions, VerifyOptions } from 'jsonwebtoken';
 import { env } from '../config/env';
 
-const ALGORITHM: Algorithm = 'HS256';
+const ALGORITHM: Algorithm = 'RS256';
 
 export interface AccessTokenPayload {
   userId: string;

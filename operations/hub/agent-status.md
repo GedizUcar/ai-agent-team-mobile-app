@@ -8,10 +8,10 @@ Bu belge, tum ajanlarin guncel durumunu ve musaitligini gosterir.
 
 | Ajan | Durum | Mevcut Gorev | Son Guncelleme |
 |------|-------|-------------|----------------|
-| **Team Lead** | Aktif | Koordinasyon ve kalite kontrol | - |
-| **Designer** | Musait | - | - |
-| **Frontend** | Musait | - | - |
-| **Backend** | Musait | - | - |
+| **Team Lead** | Aktif | Sprint 5 kalite kontrol | 2026-02-14 |
+| **Designer** | Musait | - | 2026-02-14 |
+| **Frontend** | Musait | Sprint 5 gorevleri tamamlandi | 2026-02-14 |
+| **Backend** | Musait | Sprint 5 gorevleri tamamlandi | 2026-02-14 |
 
 ---
 

@@ -65,17 +65,17 @@ Bu belge, Stilora projesinin ust duzey kilometre taslarini ve ilerleme durumunu 
 ---
 
 ### M3: Urun Katalogu
-**Durum**: ⏳ Planlanmis
-**Hedef Tarih**: -
+**Durum**: ✅ Tamamlandi
+**Tamamlanma Tarihi**: 2026-02-12
 
 **Kapsam:**
-- [ ] Home ekrani tasarimi (banner, kategoriler, featured products)
-- [ ] Product veritabani modelleri (Product, Category, ProductImage, ProductVariant)
-- [ ] Urun API endpoint'leri (list, detail, categories, home aggregation)
-- [ ] Home ekrani frontend implementasyonu
-- [ ] Product List ekrani (kategori bazli grid, infinite scroll)
-- [ ] Product Detail ekrani (foto galeri, beden/renk secimi)
-- [ ] Mock/seed data olusturma (moda urunleri)
+- [x] Home ekrani tasarimi (banner, kategoriler, featured products)
+- [x] Product veritabani modelleri (Product, Category, ProductImage, ProductVariant)
+- [x] Urun API endpoint'leri (list, detail, categories, home aggregation)
+- [x] Home ekrani frontend implementasyonu
+- [x] Product List ekrani (kategori bazli grid, infinite scroll)
+- [x] Product Detail ekrani (foto galeri, beden/renk secimi)
+- [x] Mock/seed data olusturma (moda urunleri)
 
 **Bagimlıliklar**: M2
 **Ilgili Hikayeler**: US-020, US-030, US-040
@@ -83,36 +83,36 @@ Bu belge, Stilora projesinin ust duzey kilometre taslarini ve ilerleme durumunu 
 ---
 
 ### M4: Sepet ve Siparis
-**Durum**: ⏳ Planlanmis
-**Hedef Tarih**: -
+**Durum**: ✅ Tamamlandi
+**Tamamlanma Tarihi**: 2026-02-13
 
 **Kapsam:**
-- [ ] Cart ve Order veritabani modelleri
-- [ ] Cart API endpoint'leri (get, add item, update quantity, remove item)
-- [ ] Order API endpoint'leri (create, list, detail)
-- [ ] Sepete ekleme islevi (Product Detail → Cart)
-- [ ] Cart ekrani (liste, miktar guncelleme, silme, toplam)
-- [ ] Checkout ekrani (adres formu + siparis ozeti)
-- [ ] Order Confirmation ekrani
-- [ ] Cart badge (Tab bar'da adet gostergesi)
+- [x] Cart ve Order veritabani modelleri (Prisma schema'da onceden tanimli)
+- [x] Cart API endpoint'leri (GET /cart, POST /cart/items, PATCH /cart/items/:itemId, DELETE /cart/items/:itemId)
+- [x] Order API endpoint'leri (POST /orders, GET /orders, GET /orders/:id)
+- [x] Sepete ekleme islevi (Product Detail → Cart, stok kontrolu, duplicate handling)
+- [x] Cart ekrani (liste, miktar guncelleme, silme, toplam, empty state, kargo bilgisi)
+- [x] Checkout ekrani (teslimat adresi formu + siparis ozeti + form validasyon)
+- [x] Order Confirmation ekrani (basari ikonu, siparis numarasi, yonlendirme)
+- [x] Cart badge (Tab bar'da adet gostergesi)
 
-**Bagimlıliklar**: M3
+**Bagimlıliklar**: M3 (Tamamlandi)
 **Ilgili Hikayeler**: US-041, US-050, US-051, US-060, US-061
 
 ---
 
 ### M5: Profil, Ayarlar ve Dark Mode
-**Durum**: ⏳ Planlanmis
-**Hedef Tarih**: -
+**Durum**: ✅ Tamamlandi
+**Tamamlanma Tarihi**: 2026-02-14
 
 **Kapsam:**
-- [ ] Profile ekrani (kullanici bilgileri + siparis gecmisi)
-- [ ] Profile edit ekrani
-- [ ] Settings ekrani (tema, bildirimler, cikis)
-- [ ] Dark mode tam implementasyon (tum ekranlar)
-- [ ] Siparis gecmisi listeleme
+- [x] Profile ekrani (kullanici bilgileri + siparis gecmisi)
+- [x] Profile edit ekrani
+- [x] Settings ekrani (tema, bildirimler, cikis)
+- [x] Dark mode tam implementasyon (tum ekranlar)
+- [x] Siparis gecmisi listeleme
 
-**Bagimlıliklar**: M4
+**Bagimlıliklar**: M4 (Tamamlandi)
 **Ilgili Hikayeler**: US-010, US-011, US-070
 
 ---
@@ -123,10 +123,10 @@ Bu belge, Stilora projesinin ust duzey kilometre taslarini ve ilerleme durumunu 
 
 **On Kosullar:**
 - [x] M1 tamamlandi (Scaffolding)
-- [ ] M2 tamamlandi (Auth)
-- [ ] M3 tamamlandi (Urun Katalogu)
-- [ ] M4 tamamlandi (Sepet ve Siparis)
-- [ ] M5 tamamlandi (Profil ve Ayarlar)
+- [x] M2 tamamlandi (Auth)
+- [x] M3 tamamlandi (Urun Katalogu)
+- [x] M4 tamamlandi (Sepet ve Siparis)
+- [x] M5 tamamlandi (Profil ve Ayarlar)
 - [ ] Tum kalite kapilari gecildi
 - [ ] Release hazirlik kapisi gecildi
 - [ ] Full regression test
@@ -151,9 +151,9 @@ Bu belge, Stilora projesinin ust duzey kilometre taslarini ve ilerleme durumunu 
 | M0: Altyapi + Kesif | ✅ Tamamlandi | %100 |
 | M1: Scaffolding | ✅ Tamamlandi | %100 |
 | M2: Auth | ✅ Tamamlandi | %100 |
-| M3: Urun Katalogu | ⏳ Planlanmis | %0 |
-| M4: Sepet ve Siparis | ⏳ Planlanmis | %0 |
-| M5: Profil ve Ayarlar | ⏳ Planlanmis | %0 |
+| M3: Urun Katalogu | ✅ Tamamlandi | %100 |
+| M4: Sepet ve Siparis | ✅ Tamamlandi | %100 |
+| M5: Profil ve Ayarlar | ✅ Tamamlandi | %100 |
 | MVP Release (v1.0.0) | ⏳ Planlanmis | %0 |
 
 ---

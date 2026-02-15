@@ -1,10 +1,10 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
-import { HomeScreen } from '../screens/Home/HomeScreen';
-import { ProductsScreen } from '../screens/Products/ProductsScreen';
-import { CartScreen } from '../screens/Cart/CartScreen';
-import { ProfileScreen } from '../screens/Profile/ProfileScreen';
+import { HomeStackNavigator } from './HomeStackNavigator';
+import { ProductStackNavigator } from './ProductStackNavigator';
+import { CartStackNavigator } from './CartStackNavigator';
+import { ProfileStackNavigator } from './ProfileStackNavigator';
 import { useThemeColors } from '../hooks/useThemeColors';
 import { useCartStore } from '../store/cartStore';
 import type { TabParamList } from './types';
@@ -43,17 +43,30 @@ export function TabNavigator() {
         headerShadowVisible: false,
       })}
     >
-      <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'Home' }} />
-      <Tab.Screen name="Products" component={ProductsScreen} options={{ title: 'Products' }} />
+      <Tab.Screen
+        name="Home"
+        component={HomeStackNavigator}
+        options={{ title: 'Ana Sayfa', headerShown: false }}
+      />
+      <Tab.Screen
+        name="Products"
+        component={ProductStackNavigator}
+        options={{ title: 'Urunler', headerShown: false }}
+      />
       <Tab.Screen
         name="Cart"
-        component={CartScreen}
+        component={CartStackNavigator}
         options={{
-          title: 'Cart',
+          title: 'Sepet',
+          headerShown: false,
           tabBarBadge: totalItems > 0 ? totalItems : undefined,
         }}
       />
-      <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profile' }} />
+      <Tab.Screen
+        name="Profile"
+        component={ProfileStackNavigator}
+        options={{ title: 'Profil', headerShown: false }}
+      />
     </Tab.Navigator>
   );
 }
