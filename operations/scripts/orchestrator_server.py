@@ -13,6 +13,7 @@ from pathlib import Path
 ORCHESTRATE_PATH = Path(__file__).resolve().parent / "orchestrate.py"
 RUNNER_PATH = Path(__file__).resolve().parent / "runner.py"
 AUTO_TEAM_PATH = Path(__file__).resolve().parent / "auto_team.py"
+BOOTSTRAP_PATH = Path(__file__).resolve().parent / "bootstrap_app_workspace.sh"
 ROOT = Path(__file__).resolve().parents[2]
 TOKEN = os.getenv("ORCHESTRATOR_TOKEN", "")
 QA_SECRET = os.getenv("ORCHESTRATOR_QA_SECRET", "")
@@ -47,6 +48,17 @@ def build_args(payload: dict) -> list[str]:
         if task_id:
             args.append(task_id)
         return args
+    if action == "bootstrap":
+        args = ["bootstrap"]
+        if payload.get("target_repo"):
+            args.extend(["--repo", str(payload.get("target_repo"))])
+        if payload.get("target_dir"):
+            args.extend(["--target-dir", str(payload.get("target_dir"))])
+        if payload.get("target_branch"):
+            args.extend(["--target-branch", str(payload.get("target_branch"))])
+        if payload.get("init_readme"):
+            args.append("--init-readme")
+        return args
     if action == "prompt":
         return ["prompt", payload["task_id"]]
     if action == "assign":
@@ -67,7 +79,48 @@ def resolve_command(args: list[str]) -> list[str]:
         return [sys.executable, str(RUNNER_PATH), *(args[1:])]
     if args and args[0] == "autonomous":
         return [sys.executable, str(AUTO_TEAM_PATH), *(args[1:])]
+    if args and args[0] == "bootstrap":
+        bootstrap_args = ["--repo", ""]
+        # default bootstrap args (repo required by parser)
+        cmd = ["/bin/bash", str(BOOTSTRAP_PATH)]
+        # map custom wrapper args to script args
+        i = 1
+        while i < len(args):
+            token = args[i]
+            if token == "--repo" and i + 1 < len(args):
+                cmd.extend(["--repo", args[i + 1]])
+                i += 2
+                continue
+            if token == "--target-dir" and i + 1 < len(args):
+                cmd.extend(["--base-dir", str(Path(args[i + 1]).parent), "--name", Path(args[i + 1]).name])
+                i += 2
+                continue
+            if token == "--target-branch" and i + 1 < len(args):
+                cmd.extend(["--branch", args[i + 1]])
+                i += 2
+                continue
+            if token == "--init-readme":
+                cmd.append("--init-readme")
+                i += 1
+                continue
+            i += 1
+        cmd.append("--write-env")
+        return cmd
     return [sys.executable, str(ORCHESTRATE_PATH), *args]
+
+
+def build_env_overrides(payload: dict) -> dict[str, str]:
+    env: dict[str, str] = {}
+    mapping = {
+        "target_repo": "TARGET_REPO",
+        "target_dir": "TARGET_DIR",
+        "target_branch": "TARGET_BRANCH",
+    }
+    for src, dst in mapping.items():
+        val = payload.get(src)
+        if isinstance(val, str) and val.strip():
+            env[dst] = val.strip()
+    return env
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -104,15 +157,20 @@ class Handler(BaseHTTPRequestHandler):
                     self._json(HTTPStatus.UNAUTHORIZED, {"ok": False, "error": "invalid_qa_secret"})
                     return
             args = build_args(payload)
+            env_overrides = build_env_overrides(payload)
         except Exception as exc:
             self._json(HTTPStatus.BAD_REQUEST, {"ok": False, "error": str(exc)})
             return
+
+        proc_env = os.environ.copy()
+        proc_env.update(env_overrides)
 
         result = subprocess.run(
             resolve_command(args),
             cwd=ROOT,
             capture_output=True,
             text=True,
+            env=proc_env,
         )
 
         if result.returncode != 0:
@@ -123,6 +181,7 @@ class Handler(BaseHTTPRequestHandler):
                     "command": args,
                     "stdout": result.stdout.strip(),
                     "stderr": result.stderr.strip(),
+                    "env_overrides": env_overrides,
                 },
             )
             return
@@ -133,6 +192,7 @@ class Handler(BaseHTTPRequestHandler):
                 "ok": True,
                 "command": args,
                 "stdout": result.stdout.strip(),
+                "env_overrides": env_overrides,
             },
         )
 

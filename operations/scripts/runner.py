@@ -12,9 +12,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from urllib import error, request
 
-ROOT = Path(__file__).resolve().parents[2]
-TASKS_DIR = ROOT / "operations" / "hub" / "tasks"
-REPORTS_DIR = ROOT / "deliverables" / "reports"
+CONTROL_ROOT = Path(__file__).resolve().parents[2]
+TASKS_DIR = CONTROL_ROOT / "operations" / "hub" / "tasks"
+REPORTS_DIR = CONTROL_ROOT / "deliverables" / "reports"
 
 
 def load_env_file(path: Path) -> None:
@@ -79,9 +79,10 @@ def render_prompts(task: dict) -> tuple[str, str]:
     kimi_lines = [
         "Role: Frontend UI Agent (Kimi 2.5)",
         f"Task: {task.get('id')} - {task.get('title')}",
-        "Build UI according to the API contract and provide screen/component level output.",
-        "Required states: loading, empty, success, error.",
-        "Return: file-by-file changes and integration notes for Codex backend agent.",
+        "Return ONLY file code blocks.",
+        "Format: relative/path/file.ext then fenced code block.",
+        "Example: src/todo/ui/TodoCard.tsx then ```tsx ... ```.",
+        "No explanations outside code blocks.",
     ]
     return "\n".join(codex_lines), "\n".join(kimi_lines)
 
@@ -113,18 +114,17 @@ def call_kimi(prompt: str) -> dict:
     if not api_key:
         return {"ok": False, "error": "KIMI_API_KEY missing"}
 
-    base_url = os.getenv("KIMI_BASE_URL", "https://api.moonshot.cn/v1")
+    base_url = os.getenv("KIMI_BASE_URL", "https://api.moonshot.ai/v1")
     model = os.getenv("KIMI_MODEL", "kimi-k2.5")
-    url = f"{base_url.rstrip('/')}/chat/completions"
-
     kimi_temperature = float(os.getenv("KIMI_TEMPERATURE", "1"))
+    url = f"{base_url.rstrip('/')}/chat/completions"
 
     payload = {
         "model": model,
         "messages": [
             {
                 "role": "system",
-                "content": "You are a senior React Native frontend engineer. Return actionable implementation steps.",
+                "content": "You are a senior React Native frontend engineer. Return file blocks only.",
             },
             {"role": "user", "content": prompt},
         ],
@@ -194,6 +194,51 @@ def append_usage(entry: dict) -> None:
     usage_path.write_text(json.dumps(usage, indent=2) + "\n", encoding="utf-8")
 
 
+def run_cmd(args: list[str], cwd: Path) -> subprocess.CompletedProcess:
+    return subprocess.run(args, cwd=cwd, text=True, capture_output=True, check=False)
+
+
+def sync_target_repo() -> tuple[Path, dict]:
+    target_repo = os.getenv("TARGET_REPO", "").strip()
+    target_dir = os.getenv("TARGET_DIR", "").strip()
+    branch = os.getenv("TARGET_BRANCH", "main").strip() or "main"
+
+    if not target_dir:
+        return CONTROL_ROOT, {"ok": True, "mode": "control_root"}
+
+    app_root = Path(target_dir).expanduser()
+    report: dict = {"ok": True, "target_dir": str(app_root), "branch": branch}
+
+    if target_repo:
+        report["target_repo"] = target_repo
+
+    if not app_root.exists() or not (app_root / ".git").exists():
+        if not target_repo:
+            return CONTROL_ROOT, {"ok": False, "error": "TARGET_DIR set but TARGET_REPO missing"}
+        app_root.parent.mkdir(parents=True, exist_ok=True)
+        clone = run_cmd(["git", "clone", target_repo, str(app_root)], cwd=CONTROL_ROOT)
+        if clone.returncode != 0:
+            return CONTROL_ROOT, {"ok": False, "error": "git clone failed", "stderr": clone.stderr.strip()}
+        report["cloned"] = True
+
+    if target_repo:
+        run_cmd(["git", "-C", str(app_root), "remote", "set-url", "origin", target_repo], cwd=CONTROL_ROOT)
+
+    fetch = run_cmd(["git", "-C", str(app_root), "fetch", "origin"], cwd=CONTROL_ROOT)
+    if fetch.returncode != 0:
+        report["fetch_warning"] = fetch.stderr.strip()
+
+    checkout = run_cmd(["git", "-C", str(app_root), "checkout", branch], cwd=CONTROL_ROOT)
+    if checkout.returncode != 0:
+        report["checkout_warning"] = checkout.stderr.strip()
+
+    pull = run_cmd(["git", "-C", str(app_root), "pull", "--ff-only", "origin", branch], cwd=CONTROL_ROOT)
+    if pull.returncode != 0:
+        report["pull_warning"] = pull.stderr.strip()
+
+    return app_root, report
+
+
 def extract_assistant_content(body: str) -> str:
     try:
         parsed = json.loads(body)
@@ -218,23 +263,17 @@ def extract_diff(text: str) -> str:
     return ""
 
 
-def changed_files() -> list[str]:
-    proc = subprocess.run(
-        ["git", "diff", "--name-only"],
-        cwd=ROOT,
-        text=True,
-        capture_output=True,
-        check=False,
-    )
+def changed_files(repo_root: Path) -> list[str]:
+    proc = run_cmd(["git", "diff", "--name-only"], cwd=repo_root)
     if proc.returncode != 0:
         return []
     return [line.strip() for line in proc.stdout.splitlines() if line.strip()]
 
 
-def apply_diff(diff_text: str) -> dict:
+def apply_diff(diff_text: str, repo_root: Path) -> dict:
     proc = subprocess.run(
         ["git", "apply", "--whitespace=fix", "-"],
-        cwd=ROOT,
+        cwd=repo_root,
         input=diff_text,
         text=True,
         capture_output=True,
@@ -246,14 +285,14 @@ def apply_diff(diff_text: str) -> dict:
         "returncode": proc.returncode,
         "stdout": proc.stdout.strip(),
         "stderr": proc.stderr.strip(),
-        "changed_files": changed_files() if ok else [],
+        "changed_files": changed_files(repo_root) if ok else [],
     }
 
 
-def maybe_run_checks(task: dict) -> dict:
+def maybe_run_checks(task: dict, repo_root: Path) -> dict:
     owner = (task.get("owner_agent") or "").lower()
     if owner == "frontend":
-        cmd = os.getenv("RUNNER_TEST_COMMAND_FRONTEND", "").strip() or os.getenv("RUNNER_TEST_COMMAND", "").strip()
+        cmd = os.getenv("RUNNER_TEST_COMMAND_FRONTEND", "").strip()
     else:
         cmd = os.getenv("RUNNER_TEST_COMMAND", "").strip()
 
@@ -262,7 +301,7 @@ def maybe_run_checks(task: dict) -> dict:
 
     proc = subprocess.run(
         cmd,
-        cwd=ROOT,
+        cwd=repo_root,
         shell=True,
         text=True,
         capture_output=True,
@@ -287,7 +326,7 @@ def set_task_status(task_id: str, status: str) -> dict:
     return {"ok": True, "from": old_status, "to": status}
 
 
-def run_codex_automation(task: dict, codex_response: dict) -> dict:
+def run_codex_automation(task: dict, codex_response: dict, app_root: Path) -> dict:
     body = codex_response.get("body", "")
     content = extract_assistant_content(body)
     diff_text = extract_diff(content)
@@ -303,33 +342,33 @@ def run_codex_automation(task: dict, codex_response: dict) -> dict:
         return {
             "ok": False,
             "error": "Codex response does not contain a unified diff",
-            "raw_report": str(raw_path.relative_to(ROOT)),
+            "raw_report": str(raw_path.relative_to(CONTROL_ROOT)),
         }
 
-    apply_result = apply_diff(diff_text)
+    apply_result = apply_diff(diff_text, app_root)
     if not apply_result.get("ok"):
         return {
             "ok": False,
             "error": "Failed to apply generated diff",
             "apply": apply_result,
-            "raw_report": str(raw_path.relative_to(ROOT)),
+            "raw_report": str(raw_path.relative_to(CONTROL_ROOT)),
             "raw_content": content,
         }
 
-    check_result = maybe_run_checks(task)
+    check_result = maybe_run_checks(task, app_root)
     if not check_result.get("ok"):
         return {
             "ok": False,
             "error": "Checks failed after applying diff",
             "apply": apply_result,
             "checks": check_result,
-            "raw_report": str(raw_path.relative_to(ROOT)),
+            "raw_report": str(raw_path.relative_to(CONTROL_ROOT)),
         }
 
     status_result = set_task_status(str(task.get("id")), "review")
     return {
         "ok": True,
-        "raw_report": str(raw_path.relative_to(ROOT)),
+        "raw_report": str(raw_path.relative_to(CONTROL_ROOT)),
         "apply": apply_result,
         "checks": check_result,
         "status_update": status_result,
@@ -362,17 +401,17 @@ def parse_kimi_file_blocks(text: str) -> list[tuple[str, str]]:
     return blocks
 
 
-def write_kimi_files(blocks: list[tuple[str, str]]) -> list[str]:
+def write_kimi_files(blocks: list[tuple[str, str]], app_root: Path) -> list[str]:
     changed: list[str] = []
     for rel_path, code in blocks:
-        target = ROOT / rel_path
+        target = app_root / rel_path
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(code, encoding="utf-8")
         changed.append(rel_path)
     return changed
 
 
-def run_kimi_automation(task: dict, kimi_response: dict) -> dict:
+def run_kimi_automation(task: dict, kimi_response: dict, app_root: Path) -> dict:
     content = extract_kimi_content(kimi_response)
     if not content:
         return {"ok": False, "error": "No assistant content in Kimi response"}
@@ -386,32 +425,32 @@ def run_kimi_automation(task: dict, kimi_response: dict) -> dict:
         return {
             "ok": False,
             "error": "Kimi response does not contain file code blocks",
-            "raw_report": str(raw_path.relative_to(ROOT)),
+            "raw_report": str(raw_path.relative_to(CONTROL_ROOT)),
         }
 
-    changed_files = write_kimi_files(blocks)
-    check_result = maybe_run_checks(task)
+    changed = write_kimi_files(blocks, app_root)
+    check_result = maybe_run_checks(task, app_root)
     if not check_result.get("ok"):
         return {
             "ok": False,
             "error": "Checks failed after writing Kimi files",
-            "changed_files": changed_files,
+            "changed_files": changed,
             "checks": check_result,
-            "raw_report": str(raw_path.relative_to(ROOT)),
+            "raw_report": str(raw_path.relative_to(CONTROL_ROOT)),
         }
 
     status_result = set_task_status(str(task.get("id")), "review")
     return {
         "ok": True,
-        "raw_report": str(raw_path.relative_to(ROOT)),
-        "changed_files": changed_files,
+        "raw_report": str(raw_path.relative_to(CONTROL_ROOT)),
+        "changed_files": changed,
         "checks": check_result,
         "status_update": status_result,
     }
 
 
 def run(task_id: str | None, dry_run: bool) -> int:
-    load_env_file(ROOT / ".env")
+    load_env_file(CONTROL_ROOT / ".env")
 
     task = read_task(task_id) if task_id else latest_in_progress_task()
     codex_prompt, kimi_prompt = render_prompts(task)
@@ -419,24 +458,24 @@ def run(task_id: str | None, dry_run: bool) -> int:
     owner = (task.get("owner_agent") or "").lower()
     now_iso = datetime.now(timezone.utc).isoformat()
 
+    app_root, sync_report = sync_target_repo()
+
     result: dict
     if owner == "frontend":
         response = {"ok": True, "dry_run": True} if dry_run else call_kimi(kimi_prompt)
         result = {"target": "kimi", "response": response}
         if not dry_run and result["response"].get("ok"):
-            kimi_automation = run_kimi_automation(task, result["response"])
-            result["response"]["automation"] = kimi_automation
-            if not kimi_automation.get("ok"):
+            automation = run_kimi_automation(task, result["response"], app_root)
+            result["response"]["automation"] = automation
+            if not automation.get("ok"):
                 result["response"]["ok"] = False
     else:
         response = {"ok": True, "dry_run": True} if dry_run else call_codex(codex_prompt, task)
         result = {"target": "codex", "response": response}
 
-    # Direct Codex mode: apply generated patch and move task to review.
     direct_codex = bool(not dry_run and owner != "frontend" and not os.getenv("CODEX_DISPATCH_WEBHOOK", "").strip())
     if direct_codex and result["response"].get("ok"):
-        automation = run_codex_automation(task, result["response"])
-        # One retry for malformed patches returned by the model.
+        automation = run_codex_automation(task, result["response"], app_root)
         if not automation.get("ok") and "raw_content" in automation:
             first_err = automation.get("apply", {}).get("stderr", "") if isinstance(automation.get("apply"), dict) else ""
             retry_prompt = (
@@ -447,7 +486,7 @@ def run(task_id: str | None, dry_run: bool) -> int:
             )
             retry_response = call_codex(retry_prompt, task)
             if retry_response.get("ok"):
-                retry_automation = run_codex_automation(task, retry_response)
+                retry_automation = run_codex_automation(task, retry_response, app_root)
                 retry_automation["retried"] = True
                 retry_automation["first_error"] = first_err
                 result["response"]["retry_response"] = retry_response
@@ -462,6 +501,8 @@ def run(task_id: str | None, dry_run: bool) -> int:
         "title": task.get("title"),
         "owner_agent": owner,
         "target": result["target"],
+        "app_root": str(app_root),
+        "repo_sync": sync_report,
         "response": result["response"],
     }
 
@@ -477,11 +518,12 @@ def run(task_id: str | None, dry_run: bool) -> int:
             "ok": bool(result["response"].get("ok")),
             "status": result["response"].get("status", 0),
             "dry_run": dry_run,
+            "app_root": str(app_root),
         }
     )
 
     print(f"Runner target: {result['target']}")
-    print(f"Report: {report_path.relative_to(ROOT)}")
+    print(f"Report: {report_path.relative_to(CONTROL_ROOT)}")
 
     return 0 if result["response"].get("ok") else 1
 
