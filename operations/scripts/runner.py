@@ -86,7 +86,7 @@ def render_prompts(task: dict) -> tuple[str, str]:
     return "\n".join(codex_lines), "\n".join(kimi_lines)
 
 
-def post_json(url: str, payload: dict, headers: dict[str, str], timeout: int = 45) -> dict:
+def post_json(url: str, payload: dict, headers: dict[str, str], timeout: int = 180) -> dict:
     req = request.Request(
         url,
         data=json.dumps(payload).encode("utf-8"),
@@ -117,6 +117,8 @@ def call_kimi(prompt: str) -> dict:
     model = os.getenv("KIMI_MODEL", "kimi-k2.5")
     url = f"{base_url.rstrip('/')}/chat/completions"
 
+    kimi_temperature = float(os.getenv("KIMI_TEMPERATURE", "1"))
+
     payload = {
         "model": model,
         "messages": [
@@ -126,7 +128,7 @@ def call_kimi(prompt: str) -> dict:
             },
             {"role": "user", "content": prompt},
         ],
-        "temperature": 0.2,
+        "temperature": kimi_temperature,
     }
 
     res = post_json(url, payload, {"Authorization": f"Bearer {api_key}"})
@@ -249,7 +251,12 @@ def apply_diff(diff_text: str) -> dict:
 
 
 def maybe_run_checks(task: dict) -> dict:
-    cmd = os.getenv("RUNNER_TEST_COMMAND", "").strip()
+    owner = (task.get("owner_agent") or "").lower()
+    if owner == "frontend":
+        cmd = os.getenv("RUNNER_TEST_COMMAND_FRONTEND", "").strip() or os.getenv("RUNNER_TEST_COMMAND", "").strip()
+    else:
+        cmd = os.getenv("RUNNER_TEST_COMMAND", "").strip()
+
     if not cmd:
         return {"ok": True, "skipped": True, "reason": "RUNNER_TEST_COMMAND not set"}
 
@@ -329,6 +336,80 @@ def run_codex_automation(task: dict, codex_response: dict) -> dict:
     }
 
 
+def extract_kimi_content(kimi_response: dict) -> str:
+    parsed = kimi_response.get("parsed", {})
+    if isinstance(parsed, dict) and isinstance(parsed.get("content"), str):
+        return parsed.get("content", "")
+
+    body = kimi_response.get("body", "")
+    return extract_assistant_content(body)
+
+
+def parse_kimi_file_blocks(text: str) -> list[tuple[str, str]]:
+    blocks: list[tuple[str, str]] = []
+    pattern = re.compile(
+        r"^([A-Za-z0-9_./\-]+\.[A-Za-z0-9]+)[^\n]*\n```[A-Za-z0-9_-]*\n(.*?)\n```",
+        flags=re.MULTILINE | re.DOTALL,
+    )
+
+    for match in pattern.finditer(text):
+        rel_path = match.group(1).strip()
+        code = match.group(2)
+        if rel_path.startswith("/") or ".." in rel_path.split("/"):
+            continue
+        blocks.append((rel_path, code + "\n"))
+
+    return blocks
+
+
+def write_kimi_files(blocks: list[tuple[str, str]]) -> list[str]:
+    changed: list[str] = []
+    for rel_path, code in blocks:
+        target = ROOT / rel_path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(code, encoding="utf-8")
+        changed.append(rel_path)
+    return changed
+
+
+def run_kimi_automation(task: dict, kimi_response: dict) -> dict:
+    content = extract_kimi_content(kimi_response)
+    if not content:
+        return {"ok": False, "error": "No assistant content in Kimi response"}
+
+    REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+    raw_path = REPORTS_DIR / f"{task.get('id')}-kimi-raw.md"
+    raw_path.write_text(content + "\n", encoding="utf-8")
+
+    blocks = parse_kimi_file_blocks(content)
+    if not blocks:
+        return {
+            "ok": False,
+            "error": "Kimi response does not contain file code blocks",
+            "raw_report": str(raw_path.relative_to(ROOT)),
+        }
+
+    changed_files = write_kimi_files(blocks)
+    check_result = maybe_run_checks(task)
+    if not check_result.get("ok"):
+        return {
+            "ok": False,
+            "error": "Checks failed after writing Kimi files",
+            "changed_files": changed_files,
+            "checks": check_result,
+            "raw_report": str(raw_path.relative_to(ROOT)),
+        }
+
+    status_result = set_task_status(str(task.get("id")), "review")
+    return {
+        "ok": True,
+        "raw_report": str(raw_path.relative_to(ROOT)),
+        "changed_files": changed_files,
+        "checks": check_result,
+        "status_update": status_result,
+    }
+
+
 def run(task_id: str | None, dry_run: bool) -> int:
     load_env_file(ROOT / ".env")
 
@@ -340,7 +421,13 @@ def run(task_id: str | None, dry_run: bool) -> int:
 
     result: dict
     if owner == "frontend":
-        result = {"target": "kimi", "response": {"ok": True, "dry_run": True}} if dry_run else {"target": "kimi", "response": call_kimi(kimi_prompt)}
+        response = {"ok": True, "dry_run": True} if dry_run else call_kimi(kimi_prompt)
+        result = {"target": "kimi", "response": response}
+        if not dry_run and result["response"].get("ok"):
+            kimi_automation = run_kimi_automation(task, result["response"])
+            result["response"]["automation"] = kimi_automation
+            if not kimi_automation.get("ok"):
+                result["response"]["ok"] = False
     else:
         response = {"ok": True, "dry_run": True} if dry_run else call_codex(codex_prompt, task)
         result = {"target": "codex", "response": response}
