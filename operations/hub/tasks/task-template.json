@@ -1,0 +1,29 @@
+{
+  "id": "T-XXX",
+  "title": "short feature title",
+  "status": "todo",
+  "priority": "P1",
+  "owner_agent": "team_lead",
+  "depends_on": [],
+  "inputs": [
+    "context/feature-specs/example.md"
+  ],
+  "outputs": [
+    "contracts/api/example.yaml",
+    "deliverables/reports/T-XXX.md"
+  ],
+  "acceptance_criteria": [
+    "criterion 1",
+    "criterion 2"
+  ],
+  "handoff": {
+    "from": "team_lead",
+    "to": "backend",
+    "notes": "initial assignment"
+  },
+  "qa": {
+    "required": true,
+    "gate": "operations/quality/tester-review-gate.md",
+    "result": "pending"
+  }
+}

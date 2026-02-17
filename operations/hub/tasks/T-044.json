@@ -1,0 +1,34 @@
+{
+  "id": "T-044",
+  "title": "todo backend implementation",
+  "status": "in_progress",
+  "priority": "P1",
+  "owner_agent": "backend",
+  "depends_on": [
+    "T-043"
+  ],
+  "inputs": [
+    "contracts/api/todo-mvp.yaml",
+    "context/feature-specs/todo-mobile-mvp.md"
+  ],
+  "outputs": [
+    "backend/src/routes/tasks.ts",
+    "backend/src/services/task.service.ts",
+    "deliverables/reports/T-044-backend-summary.md"
+  ],
+  "acceptance_criteria": [
+    "Auth + task CRUD endpoints implemented",
+    "Task ownership validation exists",
+    "Backend tests or validation evidence documented"
+  ],
+  "handoff": {
+    "from": "team_lead",
+    "to": "backend",
+    "notes": "Implement endpoints from todo-mvp contract"
+  },
+  "qa": {
+    "required": true,
+    "gate": "operations/quality/tester-review-gate.md",
+    "result": "FAIL"
+  }
+}

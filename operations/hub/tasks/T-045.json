@@ -1,0 +1,35 @@
+{
+  "id": "T-045",
+  "title": "todo mobile ui implementation",
+  "status": "todo",
+  "priority": "P1",
+  "owner_agent": "frontend",
+  "depends_on": [
+    "T-043",
+    "T-044"
+  ],
+  "inputs": [
+    "contracts/api/todo-mvp.yaml",
+    "context/feature-specs/todo-mobile-mvp.md"
+  ],
+  "outputs": [
+    "mobile/src/screens/Todo/TodoListScreen.tsx",
+    "mobile/src/screens/Todo/TodoEditScreen.tsx",
+    "deliverables/reports/T-045-frontend-summary.md"
+  ],
+  "acceptance_criteria": [
+    "Task list, create/edit and toggle flows implemented",
+    "Loading, empty and error states are visible",
+    "API integration respects todo-mvp contract"
+  ],
+  "handoff": {
+    "from": "team_lead",
+    "to": "frontend",
+    "notes": "Implement To-Do screens with contract-first approach"
+  },
+  "qa": {
+    "required": true,
+    "gate": "operations/quality/tester-review-gate.md",
+    "result": "pending"
+  }
+}

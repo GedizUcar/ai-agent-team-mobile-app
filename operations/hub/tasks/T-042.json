@@ -1,0 +1,30 @@
+{
+  "id": "T-042",
+  "title": "profile photo upload flow",
+  "status": "in_progress",
+  "priority": "P1",
+  "owner_agent": "team_lead",
+  "depends_on": [],
+  "inputs": [
+    "context/feature-specs/feature-spec-template.md"
+  ],
+  "outputs": [
+    "contracts/api/profile-photo.yaml",
+    "deliverables/reports/T-042-qa.md"
+  ],
+  "acceptance_criteria": [
+    "POST /api/v1/profile/photo endpoint contract exists",
+    "Frontend flow has loading, success and error state",
+    "Tester report exists with PASS or CONDITIONAL"
+  ],
+  "handoff": {
+    "from": "team_lead",
+    "to": "backend",
+    "notes": "Start with API contract and validation rules"
+  },
+  "qa": {
+    "required": true,
+    "gate": "operations/quality/tester-review-gate.md",
+    "result": "FAIL"
+  }
+}

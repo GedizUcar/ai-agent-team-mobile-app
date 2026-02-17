@@ -1,0 +1,12 @@
+{
+  "timestamp": "2026-02-17T15:00:09.376024+00:00",
+  "task_id": "T-044",
+  "title": "todo backend implementation",
+  "owner_agent": "backend",
+  "target": "codex",
+  "response": {
+    "ok": true,
+    "status": 200,
+    "body": "{\"dispatch_result\":\"queued_for_codex\",\"dispatch_target\":\"codex\",\"prompt\":\"You are the backend agent for task T-044.\\nTask title: todo backend implementation\\nAcceptance criteria:\\n- Auth + task CRUD endpoints implemented\\n- Task ownership validation exists\\n- Backend tests or validation evidence documented\\nInputs:\\n- contracts/api/todo-mvp.yaml\\n- context/feature-specs/todo-mobile-mvp.md\\nOutputs:\\n- backend/src/routes/tasks.ts\\n- backend/src/services/task.service.ts\\n- deliverables/reports/T-044-backend-summary.md\"}"
+  }
+}

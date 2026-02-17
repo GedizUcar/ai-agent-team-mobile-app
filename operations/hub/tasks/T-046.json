@@ -1,0 +1,33 @@
+{
+  "id": "T-046",
+  "title": "todo mvp qa and integration signoff",
+  "status": "todo",
+  "priority": "P1",
+  "owner_agent": "tester",
+  "depends_on": [
+    "T-045"
+  ],
+  "inputs": [
+    "contracts/api/todo-mvp.yaml",
+    "deliverables/reports/T-044-backend-summary.md",
+    "deliverables/reports/T-045-frontend-summary.md"
+  ],
+  "outputs": [
+    "deliverables/reports/T-046-qa.md"
+  ],
+  "acceptance_criteria": [
+    "Critical todo flows tested",
+    "Regression scope recorded",
+    "PASS or CONDITIONAL result documented"
+  ],
+  "handoff": {
+    "from": "team_lead",
+    "to": "tester",
+    "notes": "Run QA gate and publish signoff report"
+  },
+  "qa": {
+    "required": true,
+    "gate": "operations/quality/tester-review-gate.md",
+    "result": "pending"
+  }
+}

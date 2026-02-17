@@ -1,0 +1,33 @@
+openapi: 3.0.3
+info:
+  title: Profile Photo API
+  version: 0.1.0
+paths:
+  /api/v1/profile/photo:
+    post:
+      summary: Upload profile photo
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                photo:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: Photo uploaded
+        '400':
+          description: Invalid file
+        '401':
+          description: Unauthorized
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

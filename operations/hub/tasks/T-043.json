@@ -1,0 +1,30 @@
+{
+  "id": "T-043",
+  "title": "todo mvp planning and api contract",
+  "status": "done",
+  "priority": "P1",
+  "owner_agent": "team_lead",
+  "depends_on": [],
+  "inputs": [
+    "context/feature-specs/todo-mobile-mvp.md"
+  ],
+  "outputs": [
+    "contracts/api/todo-mvp.yaml",
+    "deliverables/reports/T-043-prompts.md"
+  ],
+  "acceptance_criteria": [
+    "MVP scope approved and documented",
+    "OpenAPI contract draft exists for auth and task endpoints",
+    "Dispatch prompts generated for backend and frontend agents"
+  ],
+  "handoff": {
+    "from": "team_lead",
+    "to": "backend",
+    "notes": "Create contract-first baseline for To-Do MVP"
+  },
+  "qa": {
+    "required": true,
+    "gate": "operations/quality/tester-review-gate.md",
+    "result": "PASS"
+  }
+}
