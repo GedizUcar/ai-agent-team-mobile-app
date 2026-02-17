@@ -306,6 +306,7 @@ def run_codex_automation(task: dict, codex_response: dict) -> dict:
             "error": "Failed to apply generated diff",
             "apply": apply_result,
             "raw_report": str(raw_path.relative_to(ROOT)),
+            "raw_content": content,
         }
 
     check_result = maybe_run_checks(task)
@@ -348,6 +349,22 @@ def run(task_id: str | None, dry_run: bool) -> int:
     direct_codex = bool(not dry_run and owner != "frontend" and not os.getenv("CODEX_DISPATCH_WEBHOOK", "").strip())
     if direct_codex and result["response"].get("ok"):
         automation = run_codex_automation(task, result["response"])
+        # One retry for malformed patches returned by the model.
+        if not automation.get("ok") and "raw_content" in automation:
+            first_err = automation.get("apply", {}).get("stderr", "") if isinstance(automation.get("apply"), dict) else ""
+            retry_prompt = (
+                f"{codex_prompt}\n\n"
+                "Your previous patch failed to apply.\n"
+                f"Apply error: {first_err}\n"
+                "Return a corrected unified git diff only in one ```diff fenced block."
+            )
+            retry_response = call_codex(retry_prompt, task)
+            if retry_response.get("ok"):
+                retry_automation = run_codex_automation(task, retry_response)
+                retry_automation["retried"] = True
+                retry_automation["first_error"] = first_err
+                result["response"]["retry_response"] = retry_response
+                automation = retry_automation
         result["response"]["automation"] = automation
         if not automation.get("ok"):
             result["response"]["ok"] = False

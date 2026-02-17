@@ -119,6 +119,12 @@ def evaluate_and_qa(task: dict, runner_result: dict, runner_report: dict, skip_q
 
     if not runner_result.get("ok"):
         note = runner_result.get("stderr") or runner_result.get("stdout") or "Runner command failed"
+        if isinstance(automation, dict) and automation:
+            err = automation.get("error", "")
+            apply_err = automation.get("apply", {}).get("stderr", "") if isinstance(automation.get("apply"), dict) else ""
+            details = "\n".join([x for x in [err, apply_err] if x]).strip()
+            if details:
+                note = f"{note}\n{details}"
         report_path = qa_task(task, "FAIL", note)
         return {"qa": "FAIL", "note": note, "report": str(report_path.relative_to(ROOT))}
 
