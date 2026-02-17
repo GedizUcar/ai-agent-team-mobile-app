@@ -5,6 +5,8 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
+import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -34,6 +36,11 @@ def read_task(task_id: str) -> dict:
     return json.loads(p.read_text(encoding="utf-8"))
 
 
+def write_task(task: dict) -> None:
+    p = TASKS_DIR / f"{task.get('id')}.json"
+    p.write_text(json.dumps(task, indent=2) + "\n", encoding="utf-8")
+
+
 def latest_in_progress_task() -> dict:
     tasks = []
     for p in TASKS_DIR.glob("*.json"):
@@ -59,6 +66,15 @@ def render_prompts(task: dict) -> tuple[str, str]:
     codex_lines.extend(f"- {i}" for i in task.get("inputs", []))
     codex_lines.append("Outputs:")
     codex_lines.extend(f"- {o}" for o in task.get("outputs", []))
+    codex_lines.extend(
+        [
+            "",
+            "Output rules:",
+            "- Return only a unified git diff in a single ```diff fenced block.",
+            "- No explanations before or after the diff.",
+            "- Ensure output files listed above are created/updated.",
+        ]
+    )
 
     kimi_lines = [
         "Role: Frontend UI Agent (Kimi 2.5)",
@@ -152,7 +168,10 @@ def call_codex(prompt: str, task: dict) -> dict:
     payload = {
         "model": model,
         "messages": [
-            {"role": "system", "content": "You are a senior backend engineer. Return actionable implementation steps."},
+            {
+                "role": "system",
+                "content": "You are a senior backend engineer. Return only a unified git diff in one ```diff fenced block.",
+            },
             {"role": "user", "content": prompt},
         ],
         "temperature": 0.1,
@@ -173,6 +192,142 @@ def append_usage(entry: dict) -> None:
     usage_path.write_text(json.dumps(usage, indent=2) + "\n", encoding="utf-8")
 
 
+def extract_assistant_content(body: str) -> str:
+    try:
+        parsed = json.loads(body)
+        return parsed["choices"][0]["message"]["content"]
+    except Exception:  # noqa: BLE001
+        return ""
+
+
+def extract_diff(text: str) -> str:
+    match = re.search(r"```diff\s*(.*?)```", text, flags=re.DOTALL | re.IGNORECASE)
+    if match:
+        return match.group(1).strip() + "\n"
+
+    if "diff --git " in text:
+        idx = text.find("diff --git ")
+        return text[idx:].strip() + "\n"
+
+    if "--- " in text and "+++ " in text:
+        idx = text.find("--- ")
+        return text[idx:].strip() + "\n"
+
+    return ""
+
+
+def changed_files() -> list[str]:
+    proc = subprocess.run(
+        ["git", "diff", "--name-only"],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if proc.returncode != 0:
+        return []
+    return [line.strip() for line in proc.stdout.splitlines() if line.strip()]
+
+
+def apply_diff(diff_text: str) -> dict:
+    proc = subprocess.run(
+        ["git", "apply", "--whitespace=fix", "-"],
+        cwd=ROOT,
+        input=diff_text,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    ok = proc.returncode == 0
+    return {
+        "ok": ok,
+        "returncode": proc.returncode,
+        "stdout": proc.stdout.strip(),
+        "stderr": proc.stderr.strip(),
+        "changed_files": changed_files() if ok else [],
+    }
+
+
+def maybe_run_checks(task: dict) -> dict:
+    cmd = os.getenv("RUNNER_TEST_COMMAND", "").strip()
+    if not cmd:
+        return {"ok": True, "skipped": True, "reason": "RUNNER_TEST_COMMAND not set"}
+
+    proc = subprocess.run(
+        cmd,
+        cwd=ROOT,
+        shell=True,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    return {
+        "ok": proc.returncode == 0,
+        "skipped": False,
+        "command": cmd,
+        "returncode": proc.returncode,
+        "stdout": proc.stdout[-4000:],
+        "stderr": proc.stderr[-4000:],
+        "task_id": task.get("id"),
+    }
+
+
+def set_task_status(task_id: str, status: str) -> dict:
+    task = read_task(task_id)
+    old_status = task.get("status")
+    task["status"] = status
+    write_task(task)
+    return {"ok": True, "from": old_status, "to": status}
+
+
+def run_codex_automation(task: dict, codex_response: dict) -> dict:
+    body = codex_response.get("body", "")
+    content = extract_assistant_content(body)
+    diff_text = extract_diff(content)
+
+    if not content:
+        return {"ok": False, "error": "No assistant content in Codex response"}
+
+    REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+    raw_path = REPORTS_DIR / f"{task.get('id')}-codex-raw.md"
+    raw_path.write_text(content + "\n", encoding="utf-8")
+
+    if not diff_text:
+        return {
+            "ok": False,
+            "error": "Codex response does not contain a unified diff",
+            "raw_report": str(raw_path.relative_to(ROOT)),
+        }
+
+    apply_result = apply_diff(diff_text)
+    if not apply_result.get("ok"):
+        return {
+            "ok": False,
+            "error": "Failed to apply generated diff",
+            "apply": apply_result,
+            "raw_report": str(raw_path.relative_to(ROOT)),
+        }
+
+    check_result = maybe_run_checks(task)
+    if not check_result.get("ok"):
+        return {
+            "ok": False,
+            "error": "Checks failed after applying diff",
+            "apply": apply_result,
+            "checks": check_result,
+            "raw_report": str(raw_path.relative_to(ROOT)),
+        }
+
+    status_result = set_task_status(str(task.get("id")), "review")
+    return {
+        "ok": True,
+        "raw_report": str(raw_path.relative_to(ROOT)),
+        "apply": apply_result,
+        "checks": check_result,
+        "status_update": status_result,
+    }
+
+
 def run(task_id: str | None, dry_run: bool) -> int:
     load_env_file(ROOT / ".env")
 
@@ -186,7 +341,16 @@ def run(task_id: str | None, dry_run: bool) -> int:
     if owner == "frontend":
         result = {"target": "kimi", "response": {"ok": True, "dry_run": True}} if dry_run else {"target": "kimi", "response": call_kimi(kimi_prompt)}
     else:
-        result = {"target": "codex", "response": {"ok": True, "dry_run": True}} if dry_run else {"target": "codex", "response": call_codex(codex_prompt, task)}
+        response = {"ok": True, "dry_run": True} if dry_run else call_codex(codex_prompt, task)
+        result = {"target": "codex", "response": response}
+
+    # Direct Codex mode: apply generated patch and move task to review.
+    direct_codex = bool(not dry_run and owner != "frontend" and not os.getenv("CODEX_DISPATCH_WEBHOOK", "").strip())
+    if direct_codex and result["response"].get("ok"):
+        automation = run_codex_automation(task, result["response"])
+        result["response"]["automation"] = automation
+        if not automation.get("ok"):
+            result["response"]["ok"] = False
 
     report = {
         "timestamp": now_iso,

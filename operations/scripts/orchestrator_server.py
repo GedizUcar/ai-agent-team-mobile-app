@@ -12,6 +12,7 @@ from pathlib import Path
 
 ORCHESTRATE_PATH = Path(__file__).resolve().parent / "orchestrate.py"
 RUNNER_PATH = Path(__file__).resolve().parent / "runner.py"
+AUTO_TEAM_PATH = Path(__file__).resolve().parent / "auto_team.py"
 ROOT = Path(__file__).resolve().parents[2]
 TOKEN = os.getenv("ORCHESTRATOR_TOKEN", "")
 QA_SECRET = os.getenv("ORCHESTRATOR_QA_SECRET", "")
@@ -40,6 +41,12 @@ def build_args(payload: dict) -> list[str]:
         if task_id:
             args.append(task_id)
         return args
+    if action == "autonomous":
+        task_id = payload.get("task_id", "")
+        args = ["autonomous"]
+        if task_id:
+            args.append(task_id)
+        return args
     if action == "prompt":
         return ["prompt", payload["task_id"]]
     if action == "assign":
@@ -53,6 +60,14 @@ def build_args(payload: dict) -> list[str]:
             args.append(note)
         return args
     raise ValueError(f"Unsupported action: {action}")
+
+
+def resolve_command(args: list[str]) -> list[str]:
+    if args and args[0] == "run":
+        return [sys.executable, str(RUNNER_PATH), *(args[1:])]
+    if args and args[0] == "autonomous":
+        return [sys.executable, str(AUTO_TEAM_PATH), *(args[1:])]
+    return [sys.executable, str(ORCHESTRATE_PATH), *args]
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -94,7 +109,7 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         result = subprocess.run(
-            [sys.executable, str(RUNNER_PATH if args and args[0] == "run" else ORCHESTRATE_PATH), *(args[1:] if args and args[0] == "run" else args)],
+            resolve_command(args),
             cwd=ROOT,
             capture_output=True,
             text=True,
